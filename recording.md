@@ -904,6 +904,87 @@ int main()
 }
 ```
 
+## 341.扁平化嵌套列表迭代器
+
+>给你一个嵌套的整型列表。请你设计一个迭代器，使其能够遍历这个整型列表中的所有整数。
+>
+>列表中的每一项或者为一个整数，或者是另一个列表。其中列表的元素也可能是整数或是其他列表。
+>
+
+这题我没看懂题，看完解答之后大概懂了，以下为题意解释
+
+> 本题定义了一个类 NestedInteger ，这个类可以存储 int  或 vector<NestedInteger> ；所以称它是一个「嵌套列表」。因为他是vector容器定义的，所以本身是有vector容器的方法的，如可以通过迭代器访问其元素。它有三个方法：
+>
+> - isInteger() ，判断当前存储的对象是否为 int；
+>
+> - getInteger() , 如果当前存储的元素是 int 型的，那么返回当前的结果 int，否则调用会失败；
+>
+> - getList() ，如果当前存储的元素是 List<NestedInteger> 型的，那么返回该 List，否则调用会失败。
+>
+> 所有可以通过其isInteger方法判断本次迭代到的是否是int，如果不是可以通过getList获得一个新的属性为vector<NestedInteger>的变量，因此可以通过递归来铺平。
+>
+>而「扁平化嵌套列表迭代器」说的是，我们需要设计一个迭代器，这个迭代器是把「嵌套列表」铺平（拆包）成各个 int，然后每次调用 hasNext() 来判断是否有下一个整数，通过 next() 返回下一个整数。
+
+- 深度优先遍历DFS
+
+```c++
+/**
+ * // This is the interface that allows for creating nested lists.
+ * // You should not implement it, or speculate about its implementation
+ * class NestedInteger {
+ *   public:
+ *     // Return true if this NestedInteger holds a single integer, rather than a nested list.
+ *     bool isInteger() const;
+ *
+ *     // Return the single integer that this NestedInteger holds, if it holds a single integer
+ *     // The result is undefined if this NestedInteger holds a nested list
+ *     int getInteger() const;
+ *
+ *     // Return the nested list that this NestedInteger holds, if it holds a nested list
+ *     // The result is undefined if this NestedInteger holds a single integer
+ *     const vector<NestedInteger> &getList() const;
+ * };
+ */
+
+
+class NestedIterator {
+private:
+    vector<int> vals;//将元素存入该vector
+    vector<int>::iterator cur;
+
+    void dfs(const vector<NestedInteger> &nestedList) {
+        for (auto &nest : nestedList) {
+            if (nest.isInteger()) {
+                vals.push_back(nest.getInteger());
+            } else {
+                dfs(nest.getList());//若本次元素不是int，则递归
+            }
+        }
+    }
+
+public:
+    NestedIterator(vector<NestedInteger> &nestedList) {
+        dfs(nestedList);
+        cur = vals.begin();//将cur作为迭代器访问vals容器
+    }
+
+    int next() {
+        return *cur++;
+    }
+
+    bool hasNext() {
+        return cur != vals.end();
+    }
+};
+
+
+/**
+ * Your NestedIterator object will be instantiated and called as such:
+ * NestedIterator i(nestedList);
+ * while (i.hasNext()) cout << i.next();
+ */
+```
+
 
 
 
