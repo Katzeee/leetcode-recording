@@ -985,9 +985,252 @@ public:
  */
 ```
 
+# 2021.3.24
 
+## vector
 
+vector.end()指向vector最后一位的**后一位**！！！
 
+vector切片
+
+```c++
+vector<int> v(n.begin(), n.begin() + 1);
+```
+
+vector找最大值
+
+```c++
+vector<int>::iterator pos = max_element(v.begin(), v.end());
+```
+
+## multiset
+
+ c++语言中，multiset是<set>库中一个非常有用的类型，它可以看成一个序列，插入一个数，删除一个数都能够在$O(\log n)$的时间内完成，而且他能时刻保证序列中的数是有序的，而且序列中可以存在重复的数。
+
+-  常用method
+
+| **操作**     | **效果**                 |
+| ------------ | ------------------------ |
+| c.size()     | 返回当前的元素数量       |
+| c.max_size() | 返回能容纳的元素最大数量 |
+| count (elem) | 返回元素值为elem的个数                          |
+| find(elem)   | 返回元素值为elem的第一个元素，如果没有返回end() |
+| lower _bound(elem) | 返回元素值为elem的第一个可安插位置，也就是元素值 >= elem的第一个元素位置 |
+| upper _bound (elem) | 返回元素值为elem的最后一个可安插位置，也就是元素值 > elem 的第一个元素位置 |
+| equal_range (elem) | 返回elem可安插的第一个位置和最后一个位置，也就是元素值==elem的区间 |
+
+##456.132模式
+
+> 给你一个整数数组 nums ，数组中共有 n 个整数。132 模式的子序列 由三个整数 nums[i]、nums[j] 和 nums[k] 组成，并同时满足：i < j < k 和 nums[i] < nums[k] < nums[j] 。
+>
+> 如果 nums 中存在 132 模式的子序列 ，返回 true ；否则，返回 false 。
+>
+
+- 我的解法：类似枚举j，但考虑j一定是最大的，从最大的往次大的一个个找
+
+```c++
+class Solution {
+public:
+    int findMax(vector<int>& nums, vector<int>::iterator &pos)
+    {
+        pos = max_element(nums.begin(), nums.end());
+        return *pos;
+    }
+    int findMin(vector<int>& nums, vector<int>::iterator &pos)
+    {
+        pos = min_element(nums.begin(), nums.end());
+        return *pos;
+    }
+    bool find132pattern(vector<int>& nums) {
+        vector<int>::iterator maxPos;
+        vector<int>::iterator minPos;
+        vector<int>::iterator Pos;
+        int Max, leftMin, rightMax;
+        while(nums.size() >= 3)
+        {
+            Max = findMax(nums, Pos);
+            if(Pos == nums.begin() || Pos + 1 == nums.end())
+            {
+                nums.erase(Pos);
+                continue;
+            }
+            vector<int> left(nums.begin(), Pos);
+            vector<int> right(Pos + 1, nums.end());
+            leftMin = findMin(left, minPos);
+            rightMax = findMax(right, maxPos);
+            if(rightMax == Max)
+            {
+                right.erase(maxPos);
+                rightMax = findMax(right, maxPos);
+            }
+            if(leftMin < rightMax && rightMax < Max)
+                return 1;
+            else
+                nums.erase(Pos);
+        }
+        return 0;
+    }
+};
+```
+
+解法不足：没有维护之前获得的信息，每次更换MAX时都重新搜索了需要的信息，如左边的最小值，该方法只是一个$O(n^2)$的算法
+
+- 枚举3的同时维护1
+
+```c++
+class Solution {
+public:
+    bool find132pattern(vector<int>& nums) {
+        int n = nums.size();
+        if (n < 3) {
+            return false;
+        }
+
+        // 左侧最小值
+        int left_min = nums[0];
+        // 右侧所有元素
+        multiset<int> right_all;
+
+        for (int k = 2; k < n; ++k) {
+            right_all.insert(nums[k]);
+        }//O(nlog n)
+
+        for (int j = 1; j < n - 1; ++j) {
+            if (left_min < nums[j]) {//枚举3
+                auto it = right_all.upper_bound(left_min);
+                if (it != right_all.end() && *it < nums[j]) {
+                    return true;
+                }
+            }
+            left_min = min(left_min, nums[j]);//维护最小值
+            right_all.erase(right_all.find(nums[j + 1]));
+        }
+
+        return false;
+    }
+};
+```
+
+该算法采用multiset来进行查找操作，时间复杂度较低，同时维护了左侧最小值$O(n\log n)$
+
+- 枚举1
+
+使用单调栈来维护
+
+如果我们从左到右枚举 1 的下标 i，那么 j, k 的下标范围都是减少的，这样就不利于对它们进行维护。因此我们可以考虑从右到左枚举 i。
+
+那么我们应该如何维护 j,k 呢？在 132 模式中，如果 1<2 并且 2<3，那么根据传递性，1<3 也是成立的，那么我们可以使用下面的方法进行维护：
+
+- 我们使用一种数据结构维护所有遍历过的元素，它们作为 2 的候选元素。
+- 每当我们遍历到一个新的元素时，就将其加入数据结构中；
+
+- 在遍历到一个新的元素的同时，我们可以考虑其是否可以作为 3。如果它作为 3，**那么数据结构中所有严格小于它的元素都可以作为 2，我们将这些元素全部从数据结构中移除**，并且使用一个变量维护所有被移除的元素的最大值。这些被移除的元素都是可以真正作为 2 的，并且元素的值越大，那么我们之后找到 1 的机会也就越大。
+
+那么这个「数据结构」是什么样的数据结构呢？我们尝试提取出它进行的操作：
+
+- 它需要支持添加一个元素；
+
+- 它需要支持移除所有严格小于给定阈值的所有元素；
+
+- 上面两步操作是「依次进行」的，即我们先用给定的阈值移除元素，再将该阈值加入数据结构中。
+
+```c++
+class Solution {
+public:
+    bool find132pattern(vector<int>& nums) {
+        stack<int> st;//单调递减栈，因为我们要找nums[j]>nums[k]，也就是第一个比nums[k]大的数，找到了就说明满足了不等式132的后半部分3>2
+        //也就是我们要找到第一个比2大的3，同时记录这个2有多大和左边的数比较
+        int n = nums.size(), k = INT_MIN;
+        for(int i = n - 1; i >= 0; i--){
+            if(nums[i] < k) return true;//此时j在栈顶，如果有num[i]<k，那么栈顶元素一定比k大
+            while(!st.empty() and st.top() < nums[i]) { //移除元素
+                k = max(k,st.top()); st.pop();
+            }
+            st.push(nums[i]);//如果不能作为i则压入栈
+        }
+        return false;
+    }
+};
+```
+
+## 739.每日温度
+
+>请根据每日 气温 列表，重新生成一个列表。对应位置的输出为：要想观测到更高的气温，至少需要等待的天数。如果气温在这之后都不会升高，请在该位置用 0 来代替。
+>
+>例如，给定一个列表 temperatures = [73, 74, 75, 71, 69, 72, 76, 73]，你的输出应该是 [1, 1, 4, 2, 1, 1, 0, 0].
+>
+
+同样是一个单调栈的问题，但我在做的时候没有想到可以压入下标，所以在填result数组的时候卡在了如何计算离当前循环的位置差多少，我想到用map记录，但不知道c++如何实现，但看过答案后思考发现我压入的**每日温度**实际上可以通过**下标访问**到，所以只需要压入下标就可以了
+
+- 单调栈
+
+```c++
+class Solution {
+public:
+    vector<int> dailyTemperatures(vector<int>& T) {
+        int n = T.size();
+        vector<int> ans(n);
+        stack<int> s;
+        for (int i = 0; i < n; ++i) {
+            while (!s.empty() && T[i] > T[s.top()]) {
+                ans[s.top()] = i - s.top();
+                s.pop();
+            }
+            s.push(i);//压入下标
+        }
+        return ans;
+    }
+};
+```
+- 贪心
+
+计算ans[i]时，看下T[i+1]，如果比T[i]大，直接得到答案1；否则，比T[i]大的下一个数的位置(pos = i+1)，至少都是pos+ans[i+1]表达的位置。
+
+相当于对自己遍历过一次的地方有记录
+
+如已知ans[3]为2的时候，在找ans[2]的时候会直接跳两个
+
+```c++
+class Solution {
+public:
+    vector<int> dailyTemperatures(vector<int>& T) {
+        int n = T.size();
+        vector<int> ans(n);
+        int pos;
+        for(int i = n - 2 ; i >=0 ; i--)//从右往左填入ans[i]，为了在找ans[i-1]时可以由ans[i]提供一些信息
+        {
+            pos = i + 1;
+            while(T[pos] <= T[i])
+            {
+                if(ans[pos] > 0) 
+                {
+                    pos += ans[pos];
+                } 
+                else 
+                {
+                    pos = i;//如果ans[pos]等于0，就说明他(T[pos])右边没有比他(T[pos])大的了
+                    //并且如果能进这个while循环，说明当前我查看的T[pos]比我当前想找的这个T[i]要小
+                    //那此时说明右边再也没有比我T[i]大的了，那我就让pos=i，后面让ans[i]=pos-i=0
+                    break;
+                }
+            }
+            ans[i] = pos - i;
+        }
+        return ans;
+    }
+};
+```
+
+## 单调栈
+
+单调栈就是从数组中找到左右两边比你大的数或者比你小的数而且时间复杂度为$O(N)$。
+
+可以以 O(1) 的时间复杂度得知某个位置**左右两侧比他大（或小）的数的位置**，当你需要高效率获取某个位置左右两侧比他大（或小）的数的位置的的时候就可以用到单调栈。
+
+求解数组中元素右边第一个比它**小**的元素的下标，从前往后，构造单调递**增**栈；
+求解数组中元素右边第一个比它**大**的元素的下标，从前往后，构造单调递**减**栈；
+求解数组中元素左边第一个比它**大**的元素的下标，从后往前，构造单调递**减**栈；
+求解数组中元素左边第一个比它**小**的元素的下标，从后往前，构造单调递**增**栈。
 
 
 
