@@ -1223,7 +1223,7 @@ public:
 
 ## 单调栈
 
-单调栈就是从数组中找到左右两边比你大的数或者比你小的数而且时间复杂度为$O(N)$。
+单调栈就是从数组中找到左右两边比你大的数或者比你小的数而且时间复杂度为$$O(N)$$。
 
 可以以 O(1) 的时间复杂度得知某个位置**左右两侧比他大（或小）的数的位置**，当你需要高效率获取某个位置左右两侧比他大（或小）的数的位置的的时候就可以用到单调栈。
 
@@ -1232,9 +1232,183 @@ public:
 求解数组中元素左边第一个比它**大**的元素的下标，从后往前，构造单调递**减**栈；
 求解数组中元素左边第一个比它**小**的元素的下标，从后往前，构造单调递**增**栈。
 
-# 2021.3.26
+# 2021.3.27
+
+## priority_queue
+
+C++中优先队列是默认一个大根堆
+
+```c++
+//升序队列
+priority_queue <int,vector<int>,greater<int> > q;//greater后面一定要有空格，不然是右移运算符>>
+//降序队列
+priority_queue <int,vector<int>,less<int> >q;
+```
+
+```c++
+empty() 　　 //如果队列为空，则返回真
+pop()　　　　//删除队顶元素，删除第一个元素
+push() 　　 //加入一个元素
+size() 　　　 //返回优先队列中拥有的元素个数
+top() 　　　　//返回优先队列对顶元素，返回优先队列中有最高优先级的元素
+```
+
+## 快速排序
+
+```c++
+#include<iostream>
+using namespace std;
+void quickSort(int a[], int m,int n);
+int partion(int a[], int m, int n);
+int main()
+{
+	int a[] = { 6,1,2,7,9,3,4,5,10,8 };
+	int m = 0;
+	int n = (sizeof(a) / 4)-1;
+	quickSort(a, m, n);
+	for (int i = 0; i < 10; i++)
+	{
+		cout << a[i] << " ";
+	}
+}
+void quickSort(int a[], int m, int n)
+{
+	if (m < n)
+	{
+		int q = partion(a, m, n);
+		quickSort(a, m, q );
+		quickSort(a, q + 1, n);
+	}
+}
+int partion(int a[], int m, int n)
+{
+	int key=m;
+	int j= n,i=m;
+	int temp1, temp2;
+	while (i != j)
+	{
+		while (a[j] > a[key] && i < j)
+		{
+			--j;//j先动 
+		}
+		
+		while ((a[i] < a[key]) && (i < j))
+		{
+			++i;//i后动 
+		}
+		if (i < j)
+		{
+			temp1 = a[j];
+			a[j] = a[i];
+			a[i] = temp1;//交换ij位置的数 
+		}
+	}
+		temp2 = a[key];
+		a[key] = a[i];
+		a[i] = temp2;//交换pivot 
+		return i;
+}
+```
+
+## C++结构体与类的区别
+
+- C的结构体和C++结构体的区别
+  - C的结构体内不允许有函数存在，C++允许有内部成员函数，且允许该函数是虚函数。所以C的结构体是**没有构造函数、析构函数、和this指针**的。
+  - C的结构体对内部成员变量的访问权限只能是**public**，而C++允许**public,protected,private**三种。
+  - C语言的结构体是**不可以继承**的，C++的结构体是**可以**从其他的结构体或者类继承过来的。
+  - C++中struct可以定义函数，但是C语言中struct**只可以定义函数指针**。
+  - C语言中sizeof( struct )，会把定义的函数指针计算大小；C++中sizeof( struct ) 和 sizeof( class )都不会计算函数的大小，只会计算成员变量的大小。
+  - 以上都是表面的区别，实际区别就是面向过程和面向对象编程思路的区别：
+    - C的结构体只是把数据变量给包裹起来了，并不涉及算法
+    - 而C++是把数据变量及对这些数据变量的相关算法给封装起来，并且给对这些数据和类不同的访问权限。
+
+C语言中是没有类的概念的，但是C语言可以通过结构体内创建函数指针实现面向对象思想。
+
+- C++的结构体和C++类的区别
+  - C++结构体内部成员变量及成员函数默认的访问级别是**public**,而C++类的内部成员变量及成员函数的默认访问级别是**private**。
+  - C++结构体的继承默认是**public**，而C++类的继承默认是**private**。
+    
+
+## 二叉树的遍历方法
+
+- 先序遍历
+
+```c++
+void preOrder(TreeNode* root)
+{
+    visit(root);
+    preOrder(root->left);
+    preOrder(root->right);
+}
+```
 
 
+
+- 中序遍历
+- 后序遍历
+
+上面的方法都是借助递归完成
+
+- 借助栈完成
+
+```c++
+//中序遍历
+void inOrder(TreeNode* root)
+{
+    stack<TreeNode*> st;
+    
+}
+```
+
+- 层次遍历
+
+```c++
+void levelOrder(TreeNode* root) 
+{
+        queue<TreeNode*> q;
+        q.push(root);
+        TreeNode* temp = new TreeNode();
+        while(!q.empty())
+        {
+            temp = q.front();
+            q.pop();
+            visit(temp);
+            if(temp->left != NULL)
+                q.push(temp->left);
+            if(temp->right != NULL)
+                q.push(temp->right);
+        }
+}
+```
+
+## 二叉排序树
+
+- 插入节点
+
+```c++
+int treeInsert(TreeNode* root, int key)
+{
+    if (root == NULL)
+    {
+        root = (TreeNode*)malloc(sizeof(TreeNode*));
+        root->val = key;
+        root->left = root->right = NULL;
+        return 1;
+    }
+    else if (key == root->val)
+        return 0;
+    else if (key < root->val)
+		return treeInsert(root->left, key);
+    else
+        return treeInsert(root->right, key);
+}
+```
+
+- 删除节点
+
+```c++
+
+```
 
 
 
